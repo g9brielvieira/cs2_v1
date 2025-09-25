@@ -1,20 +1,16 @@
 #include "stdafx.h"
 
 
-/*
-	20/06/2021 update
-	- auto updates beta (scetchy way, can work for some CSGO updates)
-	- this doesn't always work at first try, if its not working, pleace do sleep again
+/*aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 */
 
 /*
-	11/09/2023 update
-	- code cleanup
+	aaaaaaaaaaaaaaaa
 */
 
 
 //
-// static global variables
+// variaveis global
 //
 EFI_GUID gEfiSmmBase2ProtocolGuid = { 0xf4ccbfb7, 0xf6e0, 0x47fd, { 0x9d, 0xd4, 0x10, 0xa8, 0xf1, 0x50, 0xc1, 0x91 }};
 EFI_GUID gEfiSmmSwDispatch2ProtocolGuid = { 0x18a3c6dc, 0x5eea, 0x48c8, {0xa1, 0xc1, 0xb5, 0x33, 0x89, 0xf9, 0x89, 0x99 }};
