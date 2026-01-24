@@ -1,0 +1,45 @@
+# Arquivos objeto
+*.o
+*.obj
+*.a
+*.lib
+
+# Executáveis e binários
+*.efi
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Diretórios de build
+build/
+Build/
+bin/
+obj/
+out/
+dist/
+
+# Arquivos de debug
+*.pdb
+*.map
+*.dSYM/
+
+# Arquivos temporários
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# IDE e editores
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# EDK II específicos
+Conf/
+Conf/.cache
+*.log

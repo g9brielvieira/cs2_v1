@@ -1,16 +1,7 @@
 #include "stdafx.h"
 
-
-/*aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-*/
-
-/*
-	aaaaaaaaaaaaaaaa
-*/
-
-
 //
-// variaveis global
+// Variáveis globais
 //
 EFI_GUID gEfiSmmBase2ProtocolGuid = { 0xf4ccbfb7, 0xf6e0, 0x47fd, { 0x9d, 0xd4, 0x10, 0xa8, 0xf1, 0x50, 0xc1, 0x91 }};
 EFI_GUID gEfiSmmSwDispatch2ProtocolGuid = { 0x18a3c6dc, 0x5eea, 0x48c8, {0xa1, 0xc1, 0xb5, 0x33, 0x89, 0xf9, 0x89, 0x99 }};
@@ -24,6 +15,9 @@ EFI_SMM_SYSTEM_TABLE2 *gSMST;
 
 #define SW_SMI_VAL 0x56
 
+//
+// Converte caractere para minúscula
+//
 inline int to_lower_imp(int c)
 {
 	if (c >= 'A' && c <= 'Z')
@@ -32,6 +26,9 @@ inline int to_lower_imp(int c)
 		return c;
 }
 
+//
+// Compara strings sem diferenciar maiúsculas/minúsculas (case-insensitive)
+//
 inline int strcmpi_imp(const char* s1, const char* s2)
 {
 	while (*s1 && (to_lower_imp(*s1) == to_lower_imp(*s2)))
@@ -42,6 +39,9 @@ inline int strcmpi_imp(const char* s1, const char* s2)
 	return *(const unsigned char*)s1 - *(const unsigned char*)s2;
 }
 
+//
+// Compara wide strings (UTF-16) sem diferenciar maiúsculas/minúsculas
+//
 inline int wcscmpi_imp(const unsigned short* s1, const unsigned short* s2)
 {
 	while (*s1 && (to_lower_imp(*s1) == to_lower_imp(*s2)))
@@ -52,6 +52,9 @@ inline int wcscmpi_imp(const unsigned short* s1, const unsigned short* s2)
 	return *(const unsigned short*)s1 - *(const unsigned short*)s2;
 }
 
+//
+// Lê e escreve no MSR (Model Specific Register) para habilitar recursos AMD
+//
 unsigned __int64 dword_244()
 {
         unsigned __int64 result; // rax
@@ -61,6 +64,10 @@ unsigned __int64 dword_244()
         return result;
 }
 
+//
+// Handler para SMI (System Management Interrupt)
+// Processa interrupções de software com valor SW_SMI_VAL
+//
 __int64 __fastcall qword_388(__int64 a1, __int64 a2, __int64 a3)
 {
         if ( a3 )
@@ -87,6 +94,12 @@ __int64 __fastcall qword_388(__int64 a1, __int64 a2, __int64 a3)
         return 0;
 }
 
+//
+// Lê memória física diretamente
+// address: endereço físico para leitura
+// buffer: buffer destino
+// length: quantidade de bytes a ler
+//
 BOOLEAN pm_read(QWORD address, VOID *buffer, QWORD length)
 {
         if (address < 1)
@@ -98,6 +111,9 @@ BOOLEAN pm_read(QWORD address, VOID *buffer, QWORD length)
         return 1;
 }
 
+//
+// Funções auxiliares para ler valores de memória física de tamanhos específicos
+//
 unsigned short pm_read_i16(QWORD address)
 {
 	unsigned short buffer = 0;
@@ -119,6 +135,12 @@ QWORD pm_read_i64(QWORD address)
 	return buffer;
 }
 
+//
+// Escreve na memória física diretamente
+// address: endereço físico para escrita
+// buffer: buffer fonte com dados
+// length: quantidade de bytes a escrever
+//
 BOOLEAN pm_write(QWORD address, VOID *buffer, QWORD length)
 {
         if (address < 1)
@@ -130,6 +152,12 @@ BOOLEAN pm_write(QWORD address, VOID *buffer, QWORD length)
         return 1;
 }
 
+//
+// Traduz endereço virtual para físico usando page tables
+// dir: diretório de páginas (CR3)
+// va: endereço virtual
+// Retorna: endereço físico correspondente ou 0 se inválido
+//
 static QWORD pm_translate(QWORD dir, QWORD va)
 {
 	__int64 v2; // rax
@@ -165,6 +193,13 @@ static QWORD pm_translate(QWORD dir, QWORD va)
 	return 0i64;
 }
 
+//
+// Obtém endereço de uma função exportada de um módulo
+// cr3: diretório de páginas do processo
+// wow64: indica se é processo 32-bit em sistema 64-bit
+// module: endereço base do módulo
+// export_name: nome da função exportada
+//
 QWORD vm_get_export_ex(QWORD cr3, BOOLEAN wow64, QWORD module, const char *export_name)
 {
 	QWORD a0;
@@ -185,6 +220,9 @@ QWORD vm_get_export_ex(QWORD cr3, BOOLEAN wow64, QWORD module, const char *expor
 	return 0;
 }
 
+//
+// Offsets para acessar campos da estrutura EPROCESS do kernel
+//
 QWORD PsInitialSystemProcess;
 static DWORD offset_PsGetProcessImageFileName;
 static DWORD offset_PsGetProcessExitProcessCalled;
@@ -194,6 +232,9 @@ static DWORD offset_PsGetProcessPeb;
 static QWORD system_cr3;
 
 
+//
+// Localiza um processo pelo nome iterando pela lista de processos do sistema
+//
 static QWORD get_process_by_name(const char *process_name)
 {
 	QWORD entry;
@@ -224,9 +265,15 @@ static QWORD get_process_by_name(const char *process_name)
 	return 0;
 }
 
+//
+// Variáveis globais do estado do sistema
+//
 QWORD   ntoskrnl;
 BOOLEAN gInOs;
 
+//
+// Variáveis do processo alvo (CS2)
+//
 QWORD   g_process;
 QWORD   g_cvar;
 QWORD   g_process_cr3;
@@ -234,7 +281,10 @@ QWORD   g_process_peb;
 BOOLEAN g_process_wow64;
 
 
-#define min(a, b)  (((a) < (b)) ? (a) : (b))
+//
+// Lê memória virtual do processo alvo usando tradução de endereços
+// Trata páginas não mapeadas preenchendo com zeros
+//
 BOOLEAN vm_read(QWORD address, VOID *buffer, QWORD length)
 {
 	/*
@@ -278,6 +328,14 @@ BOOLEAN vm_read(QWORD address, VOID *buffer, QWORD length)
 	return 1;
 }
 
+//
+// Funções auxiliares de leitura/escrita de memória virtual
+//
+#define min(a, b)  (((a) < (b)) ? (a) : (b))
+
+//
+// Escreve na memória virtual do processo alvo
+//
 BOOLEAN vm_write(QWORD address, VOID *buffer, QWORD length)
 {
 	return pm_write(pm_translate(g_process_cr3, address), buffer, length);
@@ -314,6 +372,10 @@ inline unsigned long long wcslen_imp(const unsigned short *str)
 	return (s - str);
 }
 
+//
+// Localiza o endereço base de um módulo (DLL) carregado no processo
+// module_name: nome do módulo em formato wide string (ex: L"tier0.dll")
+//
 QWORD vm_get_module(const unsigned short *module_name)
 {
 	QWORD peb;
@@ -370,6 +432,11 @@ inline unsigned long long strlen_imp(const char *str)
 	return (s - str);
 }
 
+//
+// Obtém endereço de uma interface do Source Engine
+// base: endereço base do módulo (ex: tier0.dll)
+// name: nome da interface (ex: "VEngineCvar007")
+//
 QWORD get_interface(QWORD base, const char *name)
 {
 	QWORD export_address = vm_get_export(base, "CreateInterface");
@@ -420,6 +487,11 @@ QWORD get_interface(QWORD base, const char *name)
 	return 0;
 }
 
+//
+// Localiza uma ConVar (variável do console) do Source Engine pelo nome
+// name: nome da ConVar (ex: "cl_player_proximity_debug")
+// Retorna: ponteiro para a estrutura ConVar ou 0 se não encontrada
+//
 static QWORD get_convar(const char *name)
 {
 	QWORD tier0 = vm_get_module(L"tier0.dll");
@@ -476,9 +548,10 @@ static QWORD get_convar(const char *name)
 }
 
 
-#define LARGE_PAGE_SIZE SIZE_2MB
-#define PAGE_ALIGN_2MB(Va) ((VOID *)((QWORD)(Va) & ~(LARGE_PAGE_SIZE - 1)))
-
+//
+// Encontra o endereço base do ntoskrnl.exe (kernel do Windows)
+// usando informações de boot da UEFI
+//
 static QWORD get_ntoskrnl_base(void)
 {
 	QWORD cr3 = *(QWORD*)(0x10A0);
@@ -495,9 +568,26 @@ static QWORD get_ntoskrnl_base(void)
 	return 0;
 }
 
+//
+// Macros para alinhamento de páginas grandes (2MB)
+//
+#define LARGE_PAGE_SIZE SIZE_2MB
+#define PAGE_ALIGN_2MB(Va) ((VOID *)((QWORD)(Va) & ~(LARGE_PAGE_SIZE - 1)))
+
+//
+// Estado de patch e handle do handler principal
+//
 BOOLEAN gPatchIsDone;
 EFI_HANDLE EfiMainHandlerHandle;
 
+//
+// Handler principal do SMM - executado periodicamente em modo SMM
+// 
+// Este handler:
+// 1. Inicializa offsets do kernel na primeira execução
+// 2. Localiza o processo cs2.exe
+// 3. Encontra e modifica a ConVar cl_player_proximity_debug
+//
 EFI_STATUS EFIAPI EfiMainHandler(
 	IN EFI_HANDLE  DispatchHandle,
 	IN CONST VOID* Context         OPTIONAL,
@@ -507,6 +597,7 @@ EFI_STATUS EFIAPI EfiMainHandler(
 {
 
         if (!gInOs) {
+                // Inicialização: executa apenas uma vez para configurar offsets do kernel
 
                 EFI_SMM_CPU_PROTOCOL *SmmCpu = NULL;
 
@@ -551,26 +642,33 @@ EFI_STATUS EFIAPI EfiMainHandler(
         }
 
         if (gInOs) {
+		// Verifica se o patch já foi aplicado e se o processo ainda existe
 		if (gPatchIsDone && g_process) {
 			if (get_process_by_name("cs2.exe") == g_process)
 			{
+				// Processo ainda existe, aplica o patch novamente
 				vm_write_i32( g_cvar + 0x40, 1 );
 				return 0;
 			}
+			// Processo não existe mais, reseta o estado
 			g_cvar = 0;
 			gPatchIsDone = 0;
 		}
 
+                // Localiza o processo cs2.exe
                 g_process = get_process_by_name("cs2.exe");
                 if (g_process == 0)
                         return EFI_SUCCESS;
                 
+                // Obtém informações do processo (PEB, CR3)
                 g_process_peb = pm_read_i64(pm_translate(system_cr3, g_process + offset_PsGetProcessWow64Process));
                 g_process_cr3 = pm_read_i64(pm_translate(system_cr3, g_process + 0x28));
                 if (g_process_peb) {
+                        // Processo WoW64 (32-bit em sistema 64-bit)
                         g_process_peb = pm_read_i64(pm_translate(system_cr3, g_process_peb));
                         g_process_wow64 = 1;
                 } else {
+			// Processo 64-bit nativo
 			g_process_peb = pm_read_i64(pm_translate(system_cr3, g_process + offset_PsGetProcessPeb));
 			g_process_wow64 = 0;
                 }
@@ -578,10 +676,12 @@ EFI_STATUS EFIAPI EfiMainHandler(
                 if (g_process_peb == 0)
                         return EFI_SUCCESS;
 
+		// Localiza a ConVar cl_player_proximity_debug e ativa-a
 		g_cvar = get_convar("cl_player_proximity_debug");
 		if (g_cvar == 0)
 			return EFI_SUCCESS;
 		
+		// Ativa a ConVar (offset 0x40 contém o valor booleano)
 		vm_write_i32( g_cvar + 0x40, 1 );
 		
 		gPatchIsDone = 1;
@@ -589,6 +689,10 @@ EFI_STATUS EFIAPI EfiMainHandler(
         return EFI_SUCCESS;
 }
 
+//
+// Ponto de entrada do driver UEFI
+// Registra os handlers SMM necessários
+//
 EFI_STATUS EFIAPI EfiMain(IN EFI_LOADED_IMAGE *LoadedImage, IN EFI_SYSTEM_TABLE *SystemTable)
 {
 	gRT = SystemTable->RuntimeServices;
