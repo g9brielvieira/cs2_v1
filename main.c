@@ -280,6 +280,10 @@ QWORD   g_process_cr3;
 QWORD   g_process_peb;
 BOOLEAN g_process_wow64;
 
+//
+// Macro auxiliar para encontrar o mínimo entre dois valores
+//
+#define min(a, b)  (((a) < (b)) ? (a) : (b))
 
 //
 // Lê memória virtual do processo alvo usando tradução de endereços
@@ -327,11 +331,6 @@ BOOLEAN vm_read(QWORD address, VOID *buffer, QWORD length)
 	}
 	return 1;
 }
-
-//
-// Funções auxiliares de leitura/escrita de memória virtual
-//
-#define min(a, b)  (((a) < (b)) ? (a) : (b))
 
 //
 // Escreve na memória virtual do processo alvo
